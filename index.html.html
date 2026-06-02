@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>페인트 기초 상식 가이드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --water: #38bdf8;
+    --water-dim: #0ea5e9;
+    --oil: #fb923c;
+    --oil-dim: #ea580c;
+    --accent: #a78bfa;
+    --tip: #34d399;
+    --primer: #f472b6;
+    --primer-dim: #db2777;
+    --mold: #4ade80;
+    --clear: #fbbf24;
+    --varnish: #a3e635;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: rgba(255,255,255,0.07);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg); color: var(--text); overflow-x: hidden;
+  }
+  .a4 {
+    width: 100%; max-width: 794px;
+    margin: 0 auto; padding: 10px 14px 8px; background: var(--bg);
+  }
+
+  /* ── HEADER ── */
+  .header { text-align:center; margin-bottom:5px; }
+  .header-badge {
+    display:inline-block;
+    background:linear-gradient(135deg,var(--water-dim),var(--accent));
+    color:#fff; font-size:9px; font-weight:700; letter-spacing:2px;
+    padding:3px 10px; border-radius:20px; margin-bottom:4px;
+  }
+  .header h1 {
+    font-size:clamp(15px,3.2vw,21px); font-weight:900; letter-spacing:-0.5px;
+    background:linear-gradient(90deg,var(--water),var(--accent),var(--oil));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .header p { font-size:9.5px; color:var(--muted); margin-top:2px; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size:9.5px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    padding:2px 9px; border-radius:20px; display:inline-block; margin-bottom:5px;
+  }
+  .section-label.paint  { background:rgba(56,189,248,0.15);  color:var(--water); }
+  .section-label.primer { background:rgba(244,114,182,0.15); color:var(--primer); }
+
+  /* ── GRIDS ── */
+  .columns   { display:grid; grid-template-columns:1fr 1fr;     gap:5px; margin-bottom:5px; }
+  .columns-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:5px; }
+  /* 페인트 섹션: 수성·유성·클리어·바니쉬 4등분 */
+  .paint-grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap:5px; margin-bottom:5px;
+  }
+  .paint-right { display:contents; }
+
+  /* ── BRANCH CARD ── */
+  .branch {
+    border-radius:10px; padding:7px 9px;
+    border:1.5px solid var(--border); position:relative; overflow:hidden;
+  }
+  .branch::before {
+    content:''; position:absolute; top:0; left:0;
+    width:4px; height:100%; border-radius:10px 0 0 10px;
+  }
+  .branch.water     { background:linear-gradient(135deg,#0c1929,#0f1a2e); }
+  .branch.water::before    { background:linear-gradient(to bottom,var(--water),var(--water-dim)); }
+  .branch.oil       { background:linear-gradient(135deg,#1c1208,#200f0a); }
+  .branch.oil::before      { background:linear-gradient(to bottom,var(--oil),var(--oil-dim)); }
+  .branch.clear-card{ background:linear-gradient(135deg,#1a1505,#1c1708); }
+  .branch.clear-card::before{ background:linear-gradient(to bottom,var(--clear),#d97706); }
+  .branch.varnish-card{ background:linear-gradient(135deg,#0f1a08,#121f09); }
+  .branch.varnish-card::before{ background:linear-gradient(to bottom,var(--varnish),#65a30d); }
+  .branch.primer-o  { background:linear-gradient(135deg,#1a0d1a,#1c0f1c); }
+  .branch.primer-o::before { background:linear-gradient(to bottom,var(--primer),var(--primer-dim)); }
+  .branch.primer-w  { background:linear-gradient(135deg,#0c1929,#0f1a2e); }
+  .branch.primer-w::before { background:linear-gradient(to bottom,var(--water),var(--water-dim)); }
+  .branch.mold-card { background:linear-gradient(135deg,#081a0e,#0a1f12); }
+  .branch.mold-card::before{ background:linear-gradient(to bottom,var(--mold),#16a34a); }
+
+  .branch-title {
+    display:flex; align-items:center; gap:4px;
+    font-size:11px; font-weight:800;
+    margin-bottom:6px; padding-bottom:5px;
+    border-bottom:1px solid var(--border);
+  }
+  .branch.water      .branch-title { color:var(--water); }
+  .branch.oil        .branch-title { color:var(--oil); }
+  .branch.clear-card .branch-title { color:var(--clear); }
+  .branch.varnish-card .branch-title{ color:var(--varnish); }
+  .branch.primer-o   .branch-title  { color:var(--primer); }
+  .branch.primer-w   .branch-title  { color:var(--water); }
+  .branch.mold-card  .branch-title  { color:var(--mold); }
+  .branch-title .icon { font-size:12px; }
+
+  /* ── ITEM ── */
+  .item {
+    margin-bottom:3px; padding:4px 6px;
+    border-radius:7px; background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);
+  }
+  .item:last-child { margin-bottom:0; }
+  .item-name {
+    font-size:10px; font-weight:700;
+    display:flex; align-items:center; gap:3px;
+    margin-bottom:2px; flex-wrap:wrap;
+  }
+  .item-tag {
+    font-size:7.5px; font-weight:700;
+    padding:1px 5px; border-radius:20px; flex-shrink:0;
+  }
+  .tag-in      { background:rgba(52,211,153,0.2);  color:var(--tip); }
+  .tag-out     { background:rgba(251,146,60,0.2);   color:var(--oil); }
+  .tag-both    { background:rgba(56,189,248,0.2);   color:var(--water); }
+  .tag-outonly { background:rgba(248,113,113,0.2);  color:#f87171; }
+  .tag-clear   { background:rgba(251,191,36,0.2);   color:var(--clear); }
+  .tag-varnish { background:rgba(163,230,53,0.2);   color:var(--varnish); }
+
+  .item-desc { font-size:8.5px; color:var(--muted); line-height:1.45; }
+  .item-sub {
+    display:inline-block; font-size:8px; font-weight:600;
+    margin-top:2px; padding:1px 5px; border-radius:20px;
+  }
+  .water      .item-sub   { background:rgba(56,189,248,0.13);  color:var(--water); }
+  .oil        .item-sub   { background:rgba(251,146,60,0.13);  color:var(--oil); }
+  .clear-card .item-sub   { background:rgba(251,191,36,0.13);  color:var(--clear); }
+  .varnish-card .item-sub { background:rgba(163,230,53,0.13);  color:var(--varnish); }
+  .primer-o   .item-sub   { background:rgba(244,114,182,0.13); color:var(--primer); }
+  .primer-w   .item-sub   { background:rgba(56,189,248,0.13);  color:var(--water); }
+  .mold-card  .item-sub   { background:rgba(74,222,128,0.13);  color:var(--mold); }
+
+  .primer-next { font-size:8px; font-weight:700; color:var(--accent); }
+
+  /* 클리어/바니쉬 강조 뱃지 */
+  .badge-clear {
+    display:inline-block; font-size:7.5px; font-weight:700;
+    background:rgba(251,191,36,0.2); color:var(--clear);
+    border:1px solid rgba(251,191,36,0.35);
+    padding:1px 6px; border-radius:20px; margin-bottom:3px;
+  }
+  .badge-varnish {
+    display:inline-block; font-size:7.5px; font-weight:700;
+    background:rgba(163,230,53,0.2); color:var(--varnish);
+    border:1px solid rgba(163,230,53,0.35);
+    padding:1px 6px; border-radius:20px; margin-bottom:3px;
+  }
+  /* 니스=바니쉬 동일 알림 */
+  .same-note {
+    font-size:8px; font-weight:700;
+    background:rgba(167,139,250,0.15);
+    color:var(--accent); border:1px dashed rgba(167,139,250,0.4);
+    border-radius:6px; padding:3px 7px; margin-bottom:5px;
+    display:flex; align-items:center; gap:3px;
+  }
+
+  /* ── TIP BOX ── */
+  .tip-box {
+    background:linear-gradient(135deg,#0a1f14,#0d1a10);
+    border:1.5px solid rgba(52,211,153,0.3);
+    border-radius:10px; padding:6px 10px; margin-bottom:5px;
+  }
+  .tip-box h3 {
+    font-size:10px; color:var(--tip); font-weight:800;
+    margin-bottom:5px; display:flex; align-items:center; gap:4px;
+  }
+  .tip-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; }
+  .tip-item {
+    font-size:8px; color:var(--muted);
+    background:rgba(255,255,255,0.04);
+    border-radius:6px; padding:3px 5px; line-height:1.4;
+  }
+  .tip-item strong { color:var(--text); font-weight:700; display:block; margin-bottom:2px; font-size:8.5px; }
+  .tip-item span   { color:var(--tip); font-weight:600; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);
+    margin:4px 0;
+  }
+
+  /* ── SP삼화 배너 ── */
+  .sp-banner {
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(135deg,#1a0c05,#150a04);
+    border:1.5px solid rgba(253,74,0,0.4);
+    border-radius:11px; padding:10px 14px;
+    text-decoration:none; cursor:pointer;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    margin-bottom:0;
+  }
+  .sp-banner:hover { border-color:rgba(253,74,0,0.8); box-shadow:0 0 16px rgba(253,74,0,0.25); }
+  .sp-banner-left { display:flex; flex-direction:column; align-items:center; flex-shrink:0; gap:3px; }
+  .sp-banner-label { font-size:7.5px; font-weight:700; color:rgba(253,74,0,0.7); letter-spacing:0.5px; }
+  .sp-banner-mid { flex:1; }
+  .sp-banner-title { font-size:10.5px; font-weight:800; color:var(--text); margin-bottom:4px; }
+  .sp-banner-sub { font-size:9px; color:rgba(253,74,0,0.9); font-weight:600; }
+  .sp-banner-qr { flex-shrink:0; text-align:center; }
+
+  /* ── FOOTER ── */
+  .footer { text-align:center; font-size:7.5px; color:rgba(148,163,184,0.3); margin-top:6px; }
+
+  /* ── MOBILE ── */
+  @media (max-width:560px) {
+    .a4 { padding:12px 9px; }
+    .paint-grid { grid-template-columns:1fr 1fr; }
+    .columns,.columns-3 { grid-template-columns:1fr; }
+    .tip-grid { grid-template-columns:1fr 1fr; }
+    .qr-wrap { flex-direction:column; }
+    .qr-section { flex-direction:column; align-items:center; text-align:center; width:100%; }
+    .qr-info p { text-align:center; }
+    .qr-info div { justify-content:center; }
+  }
+  @media print {
+    body { background:#fff; }
+    .a4  { background:#fff; color:#111; max-width:210mm; }
+  }
+</style>
+</head>
+<body>
+<div class="a4">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">🎨 기초 상식 가이드</div>
+    <h1>페인트 완전 정복 마인드맵</h1>
+    <p>수성 · 유성 페인트 종류별 용도 및 적용 기준 + 보호 코팅 · 바니쉬 · 프라이머 선택 가이드</p>
+  </div>
+
+  <!-- ══ 상황별 선택 기준 ══ -->
+  <div class="tip-box">
+    <h3 style="justify-content:center;">💡 상황별 선택 기준</h3>
+    <div class="tip-grid">
+      <div class="tip-item">
+        <strong>일반 소지 실내 도장</strong>
+        콘크리트 · 몰탈 · 시멘트 · 석고보드<br>
+        <span>→ 일반 수성 페인트</span>
+      </div>
+      <div class="tip-item">
+        <strong>접착 어려운 피도면</strong>
+        실크벽지 · 시트지 · 철재 · 비철재 등<br>
+        <span>→ 기능성 수성 (젯소 초벌 권장)</span>
+      </div>
+      <div class="tip-item">
+        <strong>목재 결 살리기·착색</strong>
+        <span>→ 수성 스테인 / 오일 스테인(실외 권장)</span>
+      </div>
+      <div class="tip-item">
+        <strong>옥상·베란다 방수</strong>
+        <span>→ 우레탄</span>
+      </div>
+      <div class="tip-item">
+        <strong>실내 바닥·창고 방진</strong>
+        <span>→ 에폭시</span>
+      </div>
+      <div class="tip-item">
+        <strong>실외 목재 마감</strong>
+        <span>→ 에나멜 · 매직탄 · 락카 · 올코팅 · 스테인 등</span>
+      </div>
+      <div class="tip-item">
+        <strong>실외 철재 마감</strong>
+        <span>→ 올코팅 · 에나멜 · 스피롤탄 · 매직탄</span>
+      </div>
+      <div class="tip-item">
+        <strong>도장면 보호 코팅</strong>
+        <span>→ 수성크리어PLUS (수성 도료 위)<br>→ 바니쉬·니스 (목재 투명 마감)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══ 프라이머 섹션 ══ -->
+  <div style="text-align:center;">
+    <div class="section-label primer">🔧 프라이머 선택 가이드 — 소지면별 초벌 기준</div>
+  </div>
+  <div class="columns-3">
+
+    <!-- 유성 프라이머 -->
+    <div class="branch primer-o">
+      <div class="branch-title"><span class="icon">🛢</span>유성 프라이머</div>
+
+      <div class="item">
+        <div class="item-name">방청프라이머</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 일반 철재<br>
+          <span class="primer-next">→ 상도: 에나멜</span></div>
+        <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">상도 도장 가능: 20℃ 기준 12시간 이후</div>
+        <span class="item-sub">녹 방지 · 철재 전용 초벌</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">워시프라이머</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 아연도금 · 알루미늄 등 비철재<br>
+          <span class="primer-next">→ 상도: 에나멜 · 우레탄</span></div>
+        <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">상도 도장 가능: 25℃ 기준 16시간 이후</div>
+        <span class="item-sub">비철재 전용 · 부착력 확보</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">스피폭시FD 프라이머</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 철재 · 비철재 · 스텐 · FRP<br>
+          <span class="primer-next">→ 상도: 에나멜 · 우레탄</span></div>
+        <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">재도장 간격 (25℃): 6시간 이상 ~ 3일 이내</div>
+        <span class="item-sub">속건성 · 부착력 및 방청성 우수</span>
+      </div>
+    </div>
+
+    <!-- 수성 프라이머 -->
+    <div class="branch primer-w">
+      <div class="branch-title"><span class="icon">💧</span>수성 프라이머</div>
+
+      <div class="item">
+        <div class="item-name">수성바인다 200</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 콘크리트 · 몰탈 · 석고보드<br>
+          <span class="primer-next">→ 상도: 수성 페인트</span></div>
+        <span class="item-sub">피도면 침투 · 수성도료 접착력 증가 · 구도막 보강</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">고점도 믹싱</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 콘크리트 · 몰탈 · 석고보드<br>
+          <span class="primer-next">→ 상도: 수성 페인트</span></div>
+        <span class="item-sub">고점도 필러형 · 도막 밀착력 향상</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">젯소 계열</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 철재 · 비철재 · 목재 · 시트지 · 유성 도막 위<br>
+          <span style="font-size:7.5px;color:var(--muted);">울트라그립 · 파워젯소 등</span><br>
+          <span class="primer-next">→ 상도: 기능성 수성 페인트</span></div>
+        <span class="item-sub">다소지 범용 · 올코팅은 젯소 생략 가능</span>
+      </div>
+    </div>
+
+    <!-- 곰팡이 소지용 -->
+    <div class="branch mold-card">
+      <div class="branch-title"><span class="icon">🦠</span>곰팡이 소지용</div>
+
+      <div class="item">
+        <div class="item-name" style="color:var(--mold);">진저 몰드 킬링 프라이머</div>
+        <div class="item-desc"><b style="color:var(--text);font-size:8.5px;">소지:</b> 곰팡이·이끼·균류 핀 실내외 소지<br>
+          <span class="primer-next">→ 상도: 수성페인트 마감 필요</span></div>
+        <span class="item-sub">기존 곰팡이 직접 사멸 · 재발 억제</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">주요 특징</div>
+        <div class="item-desc">
+          · EPA 등록 항균 성분 — 곰팡이·세균·이끼 동시 제거<br>
+          · 잔류 곰팡이 얼룩 커버 보조<br>
+          · 30분 건조, 1시간 후 재도장 가능<br>
+          · 수성 타입 — 원액 사용
+        </div>
+        <span class="item-sub">⚠ 누수 원인 선조치 후 사용 필수</span>
+      </div>
+    </div>
+  </div><!-- /primer columns -->
+
+  <div class="divider"></div>
+
+  <!-- ══ 페인트 섹션 ══ -->
+  <div style="text-align:center;">
+    <div class="section-label paint">🪣 페인트 종류</div>
+  </div>
+  <div class="paint-grid">
+
+    <!-- 수성 -->
+    <div class="branch water">
+      <div class="branch-title"><span class="icon">💧</span>수성 페인트</div>
+
+      <div class="item">
+        <div class="item-name">일반 수성 <span class="item-tag tag-both">실내외</span></div>
+        <div class="item-desc">콘크리트 · 몰탈 · 시멘트<br>석고보드 · 드라이비트</div>
+        <span class="item-sub">냄새 적음 · 빠른 건조</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">기능성 수성 <span class="item-tag tag-both">실내외</span></div>
+        <div class="item-desc">다양한 소지면<br>젯소 초벌 권장<br>(올코팅은 생략 가능)</div>
+        <span class="item-sub">부착력 ↑ · 방수 등 특수 기능</span>
+      </div>
+
+      <div class="item">
+        <div class="item-name">수성 스테인 <span class="item-tag tag-both">실내외</span></div>
+        <div class="item-desc">결 살리기 · 방부·착색</div>
+        <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(251,191,36,0.85);font-weight:600;">※ 칠 없는 목재 전용 · 원액 사용 · 충분히 교반 후 사용</div>
+        <span class="item-sub">친환경 · 일부 제품은 유성보다 내구성 우수</span>
+      </div>
+
+      <div class="item" style="border-color:rgba(56,189,248,0.25);background:rgba(56,189,248,0.06);">
+        <div class="item-name" style="color:var(--water);font-size:9.5px;">💧 희석제</div>
+        <div class="item-desc">물 5~10% 미만 희석<br>과희석 시 도막 품질 저하</div>
+      </div>
+
+      <div class="item" style="border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.08);">
+        <div class="item-name" style="color:var(--water);font-size:9.5px;">🕐 재도장</div>
+        <div class="item-desc">25℃ 기준 1회칠 후 3시간 후 재도장<br><span style="color:rgba(251,191,36,0.85);font-weight:600;">⚠ 도장 후 최소 24시간 우천 노출 금지</span></div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 3열: 유성 / 클리어+ / 바니쉬 -->
+    <div class="paint-right">
+
+      <!-- 유성 -->
+      <div class="branch oil">
+        <div class="branch-title"><span class="icon">🛢</span>유성 페인트</div>
+
+        <div class="item">
+          <div class="item-name">에폭시 <span class="item-tag tag-in">실내</span></div>
+          <div class="item-desc">바닥·벽 방진</div>
+          <span class="item-sub">강한 밀착 · 내마모</span>
+          <div class="item-desc" style="margin-top:3px;font-size:8px;color:rgba(167,139,250,0.9);font-weight:700;">→ 담당 직원에게 문의 바랍니다</div>
+        </div>
+
+        <div class="item">
+          <div class="item-name">우레탄 <span class="item-tag tag-both">실내외</span></div>
+          <div class="item-desc">옥상·베란다 방수, 철재 부식 방지</div>
+          <span class="item-sub">콘크리트·몰탈·철재 등</span>
+          <div class="item-desc" style="margin-top:3px;font-size:8px;color:rgba(167,139,250,0.9);font-weight:700;">→ 담당 직원에게 문의 바랍니다</div>
+        </div>
+
+        <div class="item">
+          <div class="item-name">에나멜 <span class="item-tag tag-out">실외</span></div>
+          <div class="item-desc">철재·목재 보호용 상도 마감</div>
+          <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">1회칠 후 25℃ 기준 9시간 후 재도장</div>
+          <span class="item-sub">광택 우수 · 상도 마감재</span>
+        </div>
+
+        <div class="item">
+          <div class="item-name">락카 <span class="item-tag tag-both">실내외</span></div>
+          <div class="item-desc">목재 마감 — 빠른 건조·높은 광택</div>
+          <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">1회칠 후 25℃ 기준 2시간 후 재도장</div>
+          <span class="item-sub">⚠ 반드시 환기</span>
+        </div>
+
+        <div class="item" style="border-color:rgba(251,146,60,0.25);background:rgba(251,146,60,0.06);">
+          <div class="item-name" style="color:var(--oil);font-size:9.5px;">🧴 희석제</div>
+          <div class="item-desc">제품별 지정신나 사용<br><span style="color:rgba(251,191,36,0.85);font-weight:600;font-size:8px;">※ 페인트 스티커 참조</span></div>
+        </div>
+      </div>
+
+      <!-- 수성크리어PLUS -->
+      <div class="branch clear-card">
+        <div class="branch-title"><span class="icon">✨</span>보호 코팅</div>
+        <div class="badge-clear">수성크리어PLUS (삼화페인트)</div>
+
+        <div class="item">
+          <div class="item-name">수성크리어PLUS <span class="item-tag tag-clear">투명</span></div>
+          <div class="item-desc">수성 내/외부 도료·다채무늬 도료 위 오염 방지 투명 보호 코팅</div>
+          <span class="item-sub">📍 친환경 환경마크 인증</span>
+        </div>
+
+        <div class="item">
+          <div class="item-name">주요 강점</div>
+          <div class="item-desc">
+            · 빠른 건조 (고화 2시간 이내)<br>
+            · 투명성·작업성 우수 · DIY 가능<br>
+            · 유치원·병원·학교 등 친환경 필요 공간 적합<br>
+            · 유광/무광 선택 가능
+          </div>
+          <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">1회칠 후 25℃ 기준 3시간 후 재도장</div>
+          <span class="item-sub">수성 내/외부 도료 위 상도 전용</span>
+        </div>
+      </div>
+
+      <!-- 스테인 / 바니쉬(니스) -->
+      <div class="branch varnish-card">
+        <div class="branch-title"><span class="icon">🪵</span>유·수성 스테인 / 바니쉬 (니스)</div>
+
+        <!-- 스테인 -->
+        <div class="item" style="border-color:rgba(163,230,53,0.2);background:rgba(163,230,53,0.05);">
+          <div class="item-name" style="color:var(--varnish);font-size:9.5px;">🌿 스테인 (수성·유성)</div>
+          <div class="item-desc">
+            칠 없는 목재 전용 — 결·질감을 살리며<br>
+            착색·방부·방충·UV 부식 방지 효과<br>
+            목재 깊숙이 침투 · 원액 사용 · 충분히 교반<br>
+            <span style="font-size:7.5px;color:rgba(251,191,36,0.85);font-weight:600;">※ 기존 도막 위 사용 불가 · 유성은 실내 사용 금지</span>
+          </div>
+          <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(56,189,248,0.8);">1회칠 후 25℃ 기준 3시간 후 재도장</div>
+          <span class="item-sub">수성: 친환경 · 유성: 침투형으로 방부력 우수</span>
+        </div>
+
+        <!-- 바니쉬 구분선 -->
+        <div class="same-note" style="margin-top:4px;">
+          <div style="font-weight:800;">바니쉬 = 니스 : 동일 제품</div>
+          <div style="font-size:7.5px;margin-top:2px;opacity:0.8;">색상이 없는 투명 도료</div>
+        </div>
+
+        <div class="item">
+          <div class="badge-varnish">수성 바니쉬</div>
+          <div class="item-name"><span class="item-tag tag-both">실내·실내외*</span></div>
+          <div class="item-desc">목재 위 투명 도막 형성<br>냄새 적고 빠른 건조<br>* 제품에 따라 실내 / 실내외 사용 가능</div>
+          <span class="item-sub">친환경 · 원액 또는 물 5~10% 희석</span>
+        </div>
+
+        <div class="item">
+          <div class="badge-varnish">유성 바니쉬</div>
+          <div class="item-name"><span class="item-tag tag-both">실내·실내외*</span></div>
+          <div class="item-desc">목재 깊이 침투하는 투명 보호막<br>내구성·내수성이 일반 수성보다 강함<br>* 제품에 따라 실내 / 실내외 사용 가능</div>
+          <div class="item-desc" style="margin-top:2px;font-size:8px;color:rgba(251,191,36,0.85);font-weight:600;">에나멜신나 희석 · 스티커 참조</div>
+          <span class="item-sub">⚠ 환기 필요</span>
+        </div>
+      </div>
+
+    </div><!-- /paint-right -->
+  </div><!-- /paint-grid -->
+
+  <!-- SP삼화 홈페이지 배너 -->
+  <a href="https://spsamhwa.com/paints/search" target="_blank" class="sp-banner">
+    <div class="sp-banner-left">
+      <img src="data:image/png;base64,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" alt="SP SAMHWA" style="height:52px;display:block;">
+      <div class="sp-banner-label">공식 홈페이지</div>
+    </div>
+    <div class="sp-banner-mid">
+      <div class="sp-banner-title">제품 상세정보 · 기술자료 바로 확인</div>
+      <div class="sp-banner-sub">👆 터치하면 SP삼화 제품 검색 페이지로 이동합니다</div>
+    </div>
+    <div class="sp-banner-qr">
+      <img src="data:image/png;base64,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" alt="QR" style="width:58px;height:58px;border-radius:4px;display:block;">
+      <div style="font-size:7px;color:rgba(253,74,0,0.7);text-align:center;margin-top:2px;">QR 스캔</div>
+    </div>
+  </a>
+
+  <div class="footer"><div class="footer"><div class="footer">페인트 기초 상식 가이드 · 수성·유성 종류별 용도 및 적용 기준 · 보호 코팅 · 바니쉬(니스) · 프라이머 선택 가이드</div>
+
+</div><!-- /a4 -->
+
+<script>
+// QR: 이미지 직접 삽입
+
+// ── 나에게 보내기 (카카오톡 "나" 채팅방 바로 열기) ──
+function sendToMe(e) {
+  e.preventDefault();
+  var pageUrl = window.location.href;
+  var msg = encodeURIComponent("🎨 페인트 기초 상식 가이드\n수성·유성 종류별 용도 및 적용 기준\n\n" + pageUrl);
+  var isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // 카카오톡 나에게 보내기 앱스킴 (kakaotalk://open?type=me)
+    // → 나와의 채팅방 열기 후 메시지 입력창에 URL 클립보드 복사
+    copyToClipboard(pageUrl);
+    // 카카오톡 나와의 채팅방 앱스킴 시도
+    var scheme = "kakaotalk://launch?type=main";
+    var fallback = setTimeout(function() {
+      // 앱스킴 실패시 Web Share API 시도
+      if (navigator.share) {
+        navigator.share({ title:"🎨 페인트 기초 상식 마인드맵", url: pageUrl }).catch(function(){});
+      }
+    }, 1200);
+    window.location.href = scheme;
+    // 링크 복사 완료 알림
+    setTimeout(function(){
+      clearTimeout(fallback);
+      alert("✅ 링크가 복사됐습니다!\n카카오톡 열리면 나와의 채팅방에 붙여넣기(길게 누르기) 하세요.");
+    }, 400);
+  } else {
+    // PC: 클립보드 복사 후 안내
+    copyToClipboard(pageUrl);
+    alert("✅ 링크가 복사됐습니다!\n카카오톡 PC 앱 → 나와의 채팅방에 Ctrl+V 로 붙여넣기 하세요.");
+  }
+}
+
+// ── 친구에게 공유 ──
+function shareKakao(e) {
+  e.preventDefault();
+  var pageUrl = window.location.href;
+  var isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
+  if (isMobile && navigator.share) {
+    navigator.share({ title:"🎨 페인트 기초 상식 마인드맵", text:"수성·유성 페인트 종류별 용도 및 적용 기준 한눈에 보기", url: pageUrl }).catch(function(){});
+  } else {
+    copyToClipboard(pageUrl);
+    alert("✅ 링크가 복사됐습니다!\n카카오톡에 붙여넣기(Ctrl+V) 하세요.");
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(function(){});
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+}
+</script>
+</body>
+</html>
