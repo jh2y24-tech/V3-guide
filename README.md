@@ -1,1 +1,1 @@
-# paint-guide
+# V3-guide
