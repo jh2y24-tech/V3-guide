@@ -107,6 +107,24 @@
   .no-result.show{display:block}
   .no-result b{color:var(--ink)}
   .no-result .nr-reset{margin-top:16px;padding:9px 18px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);color:var(--ink-soft)}
+  mark.hl{background:#FFE58A;color:inherit;border-radius:3px;padding:0 1px}
+  .preasons{display:flex;flex-direction:column;gap:5px}
+  .preason{display:flex;gap:8px;align-items:baseline;background:#F7F4EA;border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.5;color:var(--ink-soft)}
+  .preason .rlabel{flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink);opacity:.7;letter-spacing:.02em}
+  .preason .rtext{min-width:0;overflow-wrap:anywhere}
+  .pcnt{margin-left:6px;font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(127,127,127,.22)}
+  .cat-pill.dim:not(.active){opacity:.45}
+  .suggest-box{position:absolute;left:20px;right:20px;top:calc(100% + 6px);background:var(--surface);border-radius:14px;box-shadow:var(--shadow-lg);border:1px solid rgba(14,42,61,.08);overflow:hidden;display:none;z-index:20}
+  .suggest-box.show{display:block}
+  .suggest-title{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--ink-faint);letter-spacing:.06em;padding:10px 16px 4px}
+  .sg-item{display:flex;align-items:center;gap:10px;width:100%;border:none;background:transparent;text-align:left;padding:10px 16px;cursor:pointer;font-family:var(--sans);font-size:14px;color:var(--ink)}
+  .sg-item:hover,.sg-item.active{background:var(--paper)}
+  .sg-ico{flex-shrink:0;width:22px;text-align:center;font-size:14px}
+  .sg-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sg-extra{flex-shrink:1;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+  .sugg-line{margin-top:10px;font-size:13px;color:var(--ink-soft)}
+  .sugg-btn{margin:4px 4px 0 0;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);color:var(--ink)}
+  .note-btn{margin-left:6px;padding:3px 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);color:var(--ink-soft)}
   .search-note{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 2px 14px}
   .search-note b{color:var(--ink)}
   .search-note.partial{background:#FFF7E0;border:1px solid #F2D98A;border-radius:10px;padding:10px 12px;color:#6B5200}
@@ -205,9 +223,10 @@
 <div class="search-wrap">
   <div class="search-box">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="searchInput" enterkeyhint="search" autocomplete="off" placeholder="제품명, 용도, 증상으로 검색 (예: 옥상, 곰팡이, 누수)">
+    <input type="text" id="searchInput" enterkeyhint="search" autocomplete="off" placeholder="제품명, 용도, 증상으로 검색 (초성 가능: ㅇㅅ)">
     <button class="search-clear" id="searchClear">✕</button>
   </div>
+  <div class="suggest-box" id="suggestBox" role="listbox"></div>
 </div>
 
 <div class="quick-section">
@@ -361,19 +380,22 @@ function renderQuickPicks(){
 function renderCatNav(){
   const wrap = document.getElementById("catScroll");
   const cats = ["전체", ...CATEGORIES.map(c => c.name)];
+  const res = searchTerm ? getSearch(searchTerm) : null;     // 검색 중이면 분류별 결과 건수 표시
+  const cnt = {};
+  if(res) res.items.forEach(x => { cnt[x.p.category] = (cnt[x.p.category] || 0) + 1; });
   wrap.innerHTML = cats.map(name => {
     const isAll = name === "전체";
     const catObj = CATEGORIES.find(c => c.name === name);
     const color = isAll ? "#1B2530" : catObj.color;
     const active = activeCat === name;
-    return `<button class="cat-pill ${active ? 'active' : ''}" data-cat="${name}" style="${active ? `background:${color};border-color:${color};color:${textOn(color)};` : ''}">${name}</button>`;
+    const n = res ? (isAll ? res.items.length : (cnt[name] || 0)) : 0;
+    const badge = res ? `<span class="pcnt">${n}</span>` : "";
+    const dim = (res && n === 0 && !active) ? " dim" : "";
+    return `<button class="cat-pill ${active ? 'active' : ''}${dim}" data-cat="${name}" style="${active ? `background:${color};border-color:${color};color:${textOn(color)};` : ''}">${name}${badge}</button>`;
   }).join("");
   wrap.querySelectorAll(".cat-pill").forEach(btn => {
     btn.addEventListener("click", () => {
-      activeCat = btn.dataset.cat;
-      searchTerm = "";
-      document.getElementById("searchInput").value = "";
-      document.getElementById("searchClear").classList.remove("show");
+      activeCat = btn.dataset.cat;      // 검색어는 그대로 두고 분류만 좁힘
       renderCatNav();
       renderList();
     });
@@ -382,17 +404,117 @@ function renderCatNav(){
 
 // ===================== RENDER: PRODUCT LIST =====================
 // ---------- 검색 엔진 ----------
-// 검색어·데이터를 같은 방식으로 정규화: 소문자 + 공백/하이픈/가운뎃점 등 제거
-//  → "에코 코트", "eco-coat", "ecocoat" 모두 같은 글자열로 비교됩니다.
-function norm(s){
-  return String(s == null ? "" : s).toLowerCase()
-    .replace(/[\s\-_–—·•‧ㆍ.,;:\/\\()\[\]{}&+*'"`~!?]+/g, "");
+const SKIP_RE = /[\s\-_–—·•‧ㆍ.,;:\/\\()\[\]{}&+*'"`~!?]/;
+// 정규화: 소문자 + 공백/하이픈/가운뎃점 등 제거. map[i] = 정규화 문자열 i번째 글자의 원문 위치(강조 표시용)
+function normMap(text){
+  const t = String(text == null ? "" : text);
+  let n = ""; const map = [];
+  for(let i = 0; i < t.length; i++){
+    if(SKIP_RE.test(t[i])) continue;
+    const lc = t[i].toLowerCase();
+    for(let k = 0; k < lc.length; k++){ n += lc[k]; map.push(i); }
+  }
+  return { n, map };
 }
+function norm(s){ return normMap(s).n; }
 function escHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+
+// ---- 한글 처리: 초성 검색 / 자모 분해(오타 보정용) ----
+const CHO  = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+const JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ";
+const JONG = ["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+const JAMO_RE = /[\u3131-\u314E]/;
+function hasJamo(s){ return JAMO_RE.test(s); }
+function choOf(c){
+  const code = c.charCodeAt(0);
+  return (code >= 0xAC00 && code <= 0xD7A3) ? CHO[Math.floor((code - 0xAC00) / 588)] : null;
+}
+function toJamo(s){
+  let out = "";
+  for(const c of String(s)){
+    const code = c.charCodeAt(0);
+    if(code >= 0xAC00 && code <= 0xD7A3){
+      const k = code - 0xAC00;
+      out += CHO[Math.floor(k / 588)] + JUNG[Math.floor((k % 588) / 28)] + JONG[k % 28];
+    } else out += c;
+  }
+  return out;
+}
+// 글자 안에서 검색어 위치 찾기. 검색어에 초성(ㅇㅅ 등)이 섞여 있으면 "옥상"의 ㅇ·ㅅ과도 일치로 처리
+function findLoose(text, needle, from){
+  from = from || 0;
+  if(!needle) return -1;
+  if(!hasJamo(needle)) return text.indexOf(needle, from);
+  const L = needle.length;
+  for(let i = from; i + L <= text.length; i++){
+    let ok = true;
+    for(let j = 0; j < L; j++){
+      const nc = needle[j], tc = text[i + j];
+      if(nc === tc) continue;
+      if(JAMO_RE.test(nc) && choOf(tc) === nc) continue;
+      ok = false; break;
+    }
+    if(ok) return i;
+  }
+  return -1;
+}
+function lev(a, b){
+  const m = a.length, n = b.length;
+  let prev = Array.from({length: n + 1}, (_, j) => j);
+  for(let i = 1; i <= m; i++){
+    const cur = [i];
+    for(let j = 1; j <= n; j++){
+      cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+// ---- 글자 강조 ----
+function matchRanges(text, needles){
+  const { n, map } = normMap(text);
+  const raw = [];
+  (needles || []).forEach(nd => {
+    if(!nd) return;
+    let i = findLoose(n, nd, 0);
+    while(i >= 0){
+      raw.push([map[i], map[i + nd.length - 1] + 1]);
+      i = findLoose(n, nd, i + nd.length);
+    }
+  });
+  raw.sort((a, b) => a[0] - b[0]);
+  const out = [];
+  raw.forEach(r => {
+    const last = out[out.length - 1];
+    if(last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]); else out.push([r[0], r[1]]);
+  });
+  return out;
+}
+function hlHtml(text, ranges){
+  text = String(text);
+  let out = "", last = 0;
+  ranges.forEach(([s0, e0]) => {
+    out += escHtml(text.slice(last, s0)) + '<mark class="hl">' + escHtml(text.slice(s0, e0)) + '</mark>';
+    last = e0;
+  });
+  return out + escHtml(text.slice(last));
+}
+function snippetHtml(text, ranges){          // 긴 문장은 일치한 부분 주변만 잘라서 표시
+  const MAX = 64;
+  if(text.length <= MAX) return hlHtml(text, ranges);
+  const a = Math.max(0, ranges[0][0] - 16);
+  let b = Math.min(text.length, a + MAX);
+  if(b < ranges[0][1]) b = Math.min(text.length, ranges[0][1] + 8);
+  const sub = [];
+  ranges.forEach(([s0, e0]) => { const s2 = Math.max(s0, a), e2 = Math.min(e0, b); if(e2 > s2) sub.push([s2 - a, e2 - a]); });
+  return (a > 0 ? "…" : "") + hlHtml(text.slice(a, b), sub) + (b < text.length ? "…" : "");
+}
+
 // 이 파일은 '대로방수화학 V3' 카탈로그이므로 브랜드명으로 검색하면 전체 제품이 나오도록 함
-const BRAND_TEXT = "대로방수화학 대로방수 대로 V3";
+const BRAND_TEXT = "대로방수화학 V3";
 // 같은 뜻의 현장 표현 묶음 (검색어 보조용 — 제품 정보 자체는 바꾸지 않습니다)
 const SYN_GROUPS = [
   ["방수재","방수제","방수재료"],
@@ -410,116 +532,238 @@ function expandToken(t){
 }
 
 // 제품별 검색 대상 필드 (가중치: 제품명 10 > 분류·한줄설명 5 > 용도·증상 4 > 상세 2 > 브랜드 1)
-let _SEARCH_INDEX = null;
+// ※ 이미지 키값(img)은 카탈로그 내용이 아니므로 검색 대상에서 제외
+let _SEARCH_INDEX = null; const _IDX_BY_ID = {};
 function getSearchIndex(){
   if(_SEARCH_INDEX) return _SEARCH_INDEX;
   _SEARCH_INDEX = PRODUCTS.map(p => {
-    const f = [];
-    const add = (w, v) => { const n = norm(v); if(n) f.push([w, n]); };
-    [p.id, p.name, p.nameEn, p.img].forEach(v => add(10, v));
-    [p.category, p.tagline].forEach(v => add(5, v));
-    (p.uses || []).forEach(v => add(4, v));
-    QUICK_PICKS.filter(q => q.ids.includes(p.id)).forEach(q => add(4, q.text));   // '증상·부위' 버튼 연결 정보
-    add(2, p.summary); add(2, p.spec);
-    (p.features || []).forEach(v => add(2, v));
-    (p.notes || []).forEach(v => add(2, v));
-    (p.spec2 || []).forEach(row => add(2, (row || []).join(" ")));
-    add(1, BRAND_TEXT);
-    return { p, fields: f };
+    const fields = [];
+    // vis: 카드에 이미 보이는 항목(검색어를 카드 안에서 바로 강조)
+    const add = (w, label, text, vis) => { const n = norm(text); if(n) fields.push({ w, label, text: String(text), n, vis: vis || null }); };
+    add(10, "코드명", p.id);
+    add(10, "제품명", p.name, "name");
+    add(10, "제품명", p.nameEn, "nameEn");
+    add(5, "분류", p.category);
+    add(5, "한줄 설명", p.tagline, "tagline");
+    (p.uses || []).forEach(v => add(4, "용도", v));
+    QUICK_PICKS.filter(q => q.ids.includes(p.id)).forEach(q => add(4, "증상·부위", q.text));
+    add(2, "제품 설명", p.summary);
+    add(2, "규격", p.spec, "spec");
+    (p.features || []).forEach(v => add(2, "특징", v));
+    (p.notes || []).forEach(v => add(2, "시공 참고", v));
+    (p.spec2 || []).forEach(row => add(2, "사양", (row || []).join(": ")));
+    add(1, "브랜드", BRAND_TEXT);
+    const e = { p, fields };
+    _IDX_BY_ID[p.id] = e;
+    return e;
   });
   return _SEARCH_INDEX;
 }
 
-function directWeight(fields, alts){
+const PURE_JAMO_RE = /^[\u3131-\u314E]+$/;
+function hitIn(fields, needle){            // 단어가 들어 있는 필드 중 최대 가중치 (없으면 0)
+  // 초성만 입력("ㅇㅅ")하면 긴 설명문까지 뒤지면 엉뚱한 결과가 많아져서, 제품명·분류·용도·증상 위주로만 찾음
+  const minW = PURE_JAMO_RE.test(needle) ? (needle.length >= 2 ? 4 : 10) : 0;
   let best = 0;
-  for(const [w, s] of fields){ if(w > best && alts.some(a => s.includes(a))) best = w; }
+  for(const f of fields){ if(f.w >= minW && f.w > best && findLoose(f.n, needle) >= 0) best = f.w; }
   return best;
 }
-// 단어 하나가 이 제품에서 얼마나 잘 맞는지 (0 = 불일치)
-function tokenWeight(fields, t){
-  let w = directWeight(fields, expandToken(t));
-  if(w) return w;
-  // 띄어쓰기 없이 붙여 쓴 검색어("옥상누수") → 두 단어로 나눠서 둘 다 맞으면 인정
-  let bestSplit = 0;
+function directMatch(fields, t){
+  let w = 0; const needles = [];
+  expandToken(t).forEach(a => { const h = hitIn(fields, a); if(h){ needles.push(a); if(h > w) w = h; } });
+  return { w, needles };
+}
+// 단어 하나가 이 제품에서 얼마나 잘 맞는지 { w: 가중치(0=불일치), needles: 실제로 일치한 글자 }
+function tokenMatch(fields, t){
+  let m = directMatch(fields, t);
+  if(m.w) return m;
+  // 붙여 쓴 검색어("옥상누수", "ㅇㅅㄴㅅ") → 두 단어로 나눠서 둘 다 맞으면 인정
+  let best = { w: 0, needles: [] };
   for(let i = 2; i <= t.length - 2; i++){
-    const a = directWeight(fields, expandToken(t.slice(0, i)));
-    const b = directWeight(fields, expandToken(t.slice(i)));
-    if(a && b) bestSplit = Math.max(bestSplit, Math.min(a, b));
+    const a = directMatch(fields, t.slice(0, i)), b = directMatch(fields, t.slice(i));
+    if(a.w && b.w){
+      const w = Math.min(a.w, b.w);
+      if(w > best.w) best = { w, needles: a.needles.concat(b.needles) };
+    }
   }
-  if(bestSplit) return bestSplit;
+  if(best.w) return best;
   // 조사가 붙은 검색어("누수가", "방수재를") → 마지막 글자를 떼고 재시도
   if(t.length >= 3){
-    w = directWeight(fields, expandToken(t.slice(0, -1)));
-    if(w) return Math.max(1, w - 1);
+    m = directMatch(fields, t.slice(0, -1));
+    if(m.w) return { w: Math.max(1, m.w - 1), needles: m.needles };
   }
-  return 0;
+  return { w: 0, needles: [] };
 }
 
-// 반환: { products, mode: "all"|"exact"|"partial"|"none", hitWords:[...] }
+// ---- 오타 보정 ("혹시 이거 찾으세요?") ----
+// 후보 단어는 이 카탈로그에 실제로 있는 말(제품명·분류·증상 버튼 단어)만 사용
+let _VOCAB = null;
+function getVocab(){
+  if(_VOCAB) return _VOCAB;
+  const m = new Map();
+  const add = show => { const n = norm(show); if(n.length >= 2 && !m.has(n)) m.set(n, String(show)); };
+  PRODUCTS.forEach(p => {
+    add(p.name); String(p.name).split(/[\s()]+/).forEach(add);
+    add(p.nameEn); String(p.nameEn).split(/[\s()&]+/).forEach(add); String(p.nameEn).split(/[\s\-()&]+/).forEach(add);
+  });
+  CATEGORIES.forEach(c => String(c.name).split(/[·,\s]+/).forEach(add));
+  QUICK_PICKS.forEach(q => String(q.text).split(/[·\s,()\/]+/).forEach(add));
+  _VOCAB = [...m].map(([n, show]) => ({ n, show, j: toJamo(n) }));
+  return _VOCAB;
+}
+function suggestWords(token){               // 자모 단위 편집거리로 비슷한 단어 찾기
+  if(token.length < 2 || hasJamo(token)) return [];
+  const tj = toJamo(token), len = tj.length;
+  const thr = len <= 3 ? 0 : len <= 5 ? 1 : len <= 9 ? 2 : 3;
+  if(!thr) return [];
+  const c = [];
+  getVocab().forEach(v => {
+    if(v.n === token || Math.abs(v.j.length - len) > thr) return;
+    const d = lev(tj, v.j);
+    if(d > 0 && d <= thr) c.push({ v, d });
+  });
+  c.sort((a, b) => a.d - b.d || a.v.n.length - b.v.n.length);
+  return c.slice(0, 2).map(x => x.v.show);
+}
+function makeSuggestions(pairs, unmatched){
+  if(!unmatched.length) return [];
+  const cands = unmatched.map(i => suggestWords(pairs[i].t));
+  if(!cands.some(c => c.length)) return [];
+  const orig = pairs.map(x => x.r).join(" ");
+  const mk = altFor => pairs.map((x, i) => {
+    const k = unmatched.indexOf(i);
+    if(k < 0 || !cands[k].length) return x.r;
+    return cands[k][k === altFor ? 1 : 0];
+  }).join(" ");
+  const out = [];
+  const a = mk(-1); if(a !== orig) out.push(a);
+  const k0 = cands.findIndex(c => c.length > 1);
+  if(k0 >= 0){ const b = mk(k0); if(!out.includes(b) && b !== orig) out.push(b); }
+  return out;
+}
+
+// 반환: { items:[{p, needles}], mode:"all"|"exact"|"partial"|"none", hitWords:[...], suggestions:[...] }
+let _lastSearch = { term: null, res: null };
+function getSearch(term){
+  if(_lastSearch.term !== term) _lastSearch = { term, res: runSearch(term) };
+  return _lastSearch.res;
+}
 function runSearch(term){
   const raw = term.split(/[\s,·\/]+/).filter(Boolean);
-  const pairs = raw.map(r => [r, norm(r)]).filter(x => x[1]);
-  if(!pairs.length) return { products: PRODUCTS.slice(), mode: "all", hitWords: [] };
+  const pairs = raw.map(r => ({ r, t: norm(r) })).filter(x => x.t);
+  if(!pairs.length) return { items: PRODUCTS.map(p => ({ p, needles: [] })), mode: "all", hitWords: [], suggestions: [] };
 
-  const scored = getSearchIndex().map(({p, fields}) => {
-    const ws = pairs.map(([, t]) => tokenWeight(fields, t));
-    return { p, ws, hits: ws.filter(Boolean).length, total: ws.reduce((a, b) => a + b, 0) };
+  const idx = getSearchIndex();
+  const scored = idx.map(({p, fields}) => {
+    const ms = pairs.map(x => tokenMatch(fields, x.t));
+    const needles = [];
+    ms.forEach(m => m.needles.forEach(n => { if(!needles.includes(n)) needles.push(n); }));
+    return { p, ms, needles, hits: ms.filter(m => m.w > 0).length, total: ms.reduce((a, m) => a + m.w, 0) };
   });
-  const byRank = (a, b) => (b.hits - a.hits) || (b.total - a.total);
+  const rank = (a, b) => (b.hits - a.hits) || (b.total - a.total);
+  const toItems = arr => arr.map(x => ({ p: x.p, needles: x.needles }));
 
-  const exact = scored.filter(x => x.hits === pairs.length).sort(byRank);
-  if(exact.length) return { products: exact.map(x => x.p), mode: "exact", hitWords: raw };
+  const exact = scored.filter(x => x.hits === pairs.length).sort(rank);
+  if(exact.length) return { items: toItems(exact), mode: "exact", hitWords: raw, suggestions: [] };
 
-  if(pairs.length > 1){
+  if(pairs.length > 1){                     // "물 샘" → "물샘"처럼 붙여서도 시도
     const joined = norm(term);
-    const j = getSearchIndex().map(({p, fields}) => ({ p, w: tokenWeight(fields, joined) })).filter(x => x.w > 0).sort((a, b) => b.w - a.w);
-    if(j.length) return { products: j.map(x => x.p), mode: "exact", hitWords: raw };
+    const j = idx.map(({p, fields}) => ({ p, m: tokenMatch(fields, joined) })).filter(x => x.m.w > 0).sort((a, b) => b.m.w - a.m.w);
+    if(j.length) return { items: j.map(x => ({ p: x.p, needles: x.m.needles })), mode: "exact", hitWords: raw, suggestions: [] };
   }
 
-  const partial = scored.filter(x => x.hits > 0).sort(byRank);
+  const unmatched = [];                     // 어떤 제품에서도 못 찾은 단어 → 오타 후보
+  pairs.forEach((x, i) => { if(scored.every(sc => sc.ms[i].w === 0)) unmatched.push(i); });
+  const suggestions = makeSuggestions(pairs, unmatched);
+
+  const partial = scored.filter(x => x.hits > 0).sort(rank);
   if(partial.length){
-    const hitWords = pairs.filter((_, i) => partial.some(x => x.ws[i] > 0)).map(x => x[0]);
-    return { products: partial.map(x => x.p), mode: "partial", hitWords };
+    const hitWords = pairs.filter((_, i) => partial.some(x => x.ms[i].w > 0)).map(x => x.r);
+    return { items: toItems(partial), mode: "partial", hitWords, suggestions };
   }
-  return { products: [], mode: "none", hitWords: [] };
+  return { items: [], mode: "none", hitWords: [], suggestions };
+}
+
+// 카드 아래 "왜 이 제품이 나왔는지" (카드에 안 보이는 항목 중 일치한 것, 최대 2줄)
+function reasonsHtml(p, needles){
+  const e = _IDX_BY_ID[p.id];
+  if(!e || !needles || !needles.length) return "";
+  const cand = e.fields.filter(f => !f.vis && f.label).sort((a, b) => b.w - a.w);
+  const picked = [], usedLabel = new Set();
+  // 1차: 항목(용도·특징·사양…)이 서로 다른 것부터 / 2차: 남는 자리는 같은 항목의 다른 줄로 채움 (최대 2줄)
+  for(const pass of [1, 2]){
+    for(const f of cand){
+      if(picked.length >= 2) break;
+      if(picked.includes(f)) continue;
+      if(pass === 1 && usedLabel.has(f.label)) continue;
+      const ranges = matchRanges(f.text, needles);
+      if(!ranges.length) continue;
+      f.__r = ranges; picked.push(f); usedLabel.add(f.label);
+    }
+  }
+  const lines = picked.map(f => `<div class="preason"><span class="rlabel">${f.label}</span><span class="rtext">${snippetHtml(f.text, f.__r)}</span></div>`);
+  return lines.length ? `<div class="preasons">${lines.join("")}</div>` : "";
+}
+function suggestHtml(list){
+  if(!list || !list.length) return "";
+  return `<div class="sugg-line">혹시 이걸 찾으세요? ${list.map(q => `<button class="sugg-btn" data-q="${escHtml(q)}">${escHtml(q)}</button>`).join("")}</div>`;
+}
+function bindSearchActions(root){
+  root.querySelectorAll(".sugg-btn").forEach(b => b.addEventListener("click", () => applySearch(b.dataset.q)));
+  const all = root.querySelector("#nrAllCats, #noteAllCats");
+  if(all) all.addEventListener("click", () => { activeCat = "전체"; renderCatNav(); renderList(); });
+  const rs = root.querySelector("#nrReset");
+  if(rs) rs.addEventListener("click", () => {
+    activeCat = "전체"; searchInput.value = ""; searchTerm = "";
+    searchClear.classList.remove("show"); renderCatNav(); renderList();
+  });
 }
 
 function renderList(forceIds){
   const listEl = document.getElementById("productList");
   const noResult = document.getElementById("noResult");
 
-  let filtered;
-  let searchInfo = null;
+  let filtered;                 // 화면에 보여줄 제품 배열
+  let searchInfo = null, hitMap = null, totalMatches = 0;
+  const catOk = p => activeCat === "전체" || activeCat.startsWith("__QUICK__") || p.category === activeCat;
   if(forceIds){
     filtered = forceIds.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
   } else if(searchTerm){
-    searchInfo = runSearch(searchTerm);
-    filtered = searchInfo.products;
+    searchInfo = getSearch(searchTerm);
+    totalMatches = searchInfo.items.length;
+    hitMap = new Map(searchInfo.items.map(x => [x.p.id, x.needles]));
+    filtered = searchInfo.items.map(x => x.p).filter(catOk);
   } else {
-    filtered = PRODUCTS.filter(p => activeCat === "전체" || activeCat.startsWith("__QUICK__") || p.category === activeCat);
+    filtered = PRODUCTS.filter(catOk);
   }
 
   if(filtered.length === 0){
     listEl.innerHTML = "";
-    noResult.innerHTML = searchTerm
-      ? `<b>‘${escHtml(searchTerm)}’</b>에 대한 검색 결과가 없습니다.<br>제품명, 용도(옥상·욕실·외벽), 증상(누수·균열·곰팡이)으로 다시 검색해보세요.<br><button class="nr-reset" id="nrReset">전체 제품 보기</button>`
-      : "검색 결과가 없습니다. 다른 키워드로 시도해보세요.";
+    const q = escHtml(searchTerm);
+    if(searchTerm && totalMatches > 0){
+      noResult.innerHTML = `<b>‘${q}’</b> 검색 결과가 <b>${escHtml(activeCat)}</b> 분류에는 없어요.<br>다른 분류에는 <b>${totalMatches}개</b> 있습니다.<br><button class="nr-reset" id="nrAllCats">전체 분류에서 보기</button>`;
+    } else if(searchTerm){
+      noResult.innerHTML = `<b>‘${q}’</b>에 대한 검색 결과가 없습니다.${suggestHtml(searchInfo.suggestions)}<br>제품명, 용도(옥상·욕실·외벽), 증상(누수·균열·곰팡이)으로 다시 검색해보세요.<br><button class="nr-reset" id="nrReset">전체 제품 보기</button>`;
+    } else {
+      noResult.innerHTML = "검색 결과가 없습니다. 다른 키워드로 시도해보세요.";
+    }
     noResult.classList.add("show");
-    const rb = document.getElementById("nrReset");
-    if(rb) rb.addEventListener("click", () => {
-      searchInput.value = ""; searchTerm = "";
-      searchClear.classList.remove("show");
-      renderList();
-    });
+    bindSearchActions(noResult);
     return;
   }
   noResult.classList.remove("show");
+  noResult.innerHTML = "";
 
   if(searchInfo){
+    const inCat = activeCat !== "전체" && !activeCat.startsWith("__QUICK__");
+    const catNote = inCat ? ` · 분류 <b>${escHtml(activeCat)}</b> 안에서` : "";
+    const more = (inCat && totalMatches > filtered.length) ? ` <button class="note-btn" id="noteAllCats">전체 분류 ${totalMatches}개 보기</button>` : "";
+    const q = escHtml(searchTerm);
+    const catNoteP = inCat ? ` (분류 <b>${escHtml(activeCat)}</b> 안에서)` : "";
     const note = searchInfo.mode === "partial"
-      ? `<div class="search-note partial">‘<b>${escHtml(searchTerm)}</b>’ 전체와 일치하는 제품은 없어서, 일부 단어(<b>${escHtml(searchInfo.hitWords.join(", "))}</b>)가 들어간 제품 <b>${filtered.length}개</b>를 보여드려요.</div>`
-      : `<div class="search-note">‘<b>${escHtml(searchTerm)}</b>’ 검색 결과 <b>${filtered.length}개</b> · 관련도 높은 순</div>`;
-    listEl.innerHTML = `<div class="group">${note}<div class="card-grid">${filtered.map(cardHtml).join("")}</div></div>`;
+      ? `<div class="search-note partial">‘<b>${q}</b>’ 전체와 일치하는 제품은 없어서, 일부 단어(<b>${escHtml(searchInfo.hitWords.join(", "))}</b>)가 들어간 제품 <b>${filtered.length}개</b>를 보여드려요${catNoteP}.${more}${suggestHtml(searchInfo.suggestions)}</div>`
+      : `<div class="search-note">‘<b>${q}</b>’ 검색 결과 <b>${filtered.length}개</b>${catNote} · 관련도 높은 순${more}</div>`;
+    listEl.innerHTML = `<div class="group">${note}<div class="card-grid">${filtered.map(p => cardHtml(p, hitMap.get(p.id))).join("")}</div></div>`;
   } else if(forceIds){
     // flat grid, no grouping
     listEl.innerHTML = `<div class="group"><div class="card-grid">${filtered.map(cardHtml).join("")}</div></div>`;
@@ -543,23 +787,27 @@ function renderList(forceIds){
     }).join("");
   }
 
+  bindSearchActions(listEl);
   listEl.querySelectorAll(".pcard").forEach(card => {
     card.addEventListener("click", () => openModal(card.dataset.id));
   });
 }
 
-function cardHtml(p){
+function cardHtml(p, needles){
+  const hl = Array.isArray(needles) && needles.length > 0;     // 검색 결과일 때만 강조·이유 표시
+  const H = txt => hl ? hlHtml(txt, matchRanges(txt, needles)) : txt;
   return `
     <div class="pcard" data-id="${p.id}">
       <div class="ptop">
         <div class="pname-wrap">
-          <span class="pname">${p.name}</span>
-          <span class="pname-en">${p.nameEn}</span>
+          <span class="pname">${H(p.name)}</span>
+          <span class="pname-en">${H(p.nameEn)}</span>
         </div>
         <span class="ptag-cat" style="background:${p.catColor};color:${textOn(p.catColor)};box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)">${p.category}</span>
       </div>
-      <div class="ptagline">${p.tagline}</div>
-      <div class="pspec">📦 ${p.spec}</div>
+      <div class="ptagline">${H(p.tagline)}</div>
+      ${hl ? reasonsHtml(p, needles) : ""}
+      <div class="pspec">📦 ${H(p.spec)}</div>
       <div class="arrow">→</div>
     </div>
   `;
@@ -657,26 +905,124 @@ document.getElementById("imgFullscreen").addEventListener("click", (e) => {
 // ===================== SEARCH =====================
 const searchInput = document.getElementById("searchInput");
 const searchClear = document.getElementById("searchClear");
-searchInput.addEventListener("input", () => {
-  searchTerm = searchInput.value.trim();
-  searchClear.classList.toggle("show", searchTerm.length > 0);
-  activeCat = "전체";
+const suggestBox = document.getElementById("suggestBox");
+
+function scrollToResults(){ document.querySelector("main").scrollIntoView({behavior:"smooth", block:"start"}); }
+
+function applySearch(q){                       // 검색어를 넣고 바로 검색 (분류 선택은 유지)
+  const v = String(q).trim();
+  searchInput.value = v;
+  searchTerm = norm(v) ? v : "";
+  searchClear.classList.toggle("show", v.length > 0);
+  if(activeCat.startsWith("__QUICK__")) activeCat = "전체";
+  closeSuggest();
   renderCatNav();
   renderList();
+}
+
+// ---- 자동완성 · 추천 검색어 (카탈로그에 있는 제품명·증상·분류·키워드만) ----
+const SG_ICON = { product: "🧴", symptom: "🩺", category: "🏷️", keyword: "🔎" };
+const SG_PRI  = { product: 3, keyword: 3, symptom: 2, category: 1 };
+let _SG = null, sgItems = [], sgActive = -1;
+function getSuggestCatalog(){
+  if(_SG) return _SG;
+  const list = [], seen = new Set();
+  const add = (type, text, extra, hay) => {
+    const key = norm(text);
+    if(!key || seen.has(key)) return;
+    seen.add(key);
+    list.push({ type, text, extra, n: norm(hay), payload: text });
+  };
+  PRODUCTS.forEach(p => add("product", p.name, p.nameEn, p.name + " " + p.nameEn + " " + p.id));
+  QUICK_PICKS.forEach(q => add("symptom", q.text, q.ids.length + "개 제품", q.text));
+  CATEGORIES.forEach(c => add("category", c.name, "분류", c.name));
+  QUICK_PICKS.forEach(q => String(q.text).split(/[·\s,()\/]+/).forEach(w => { if(w.length >= 2) add("keyword", w, "키워드", w); }));
+  return (_SG = list);
+}
+function computeSuggestions(q){
+  const toks = q.split(/[\s,·\/]+/).map(norm).filter(Boolean);
+  const cat = getSuggestCatalog();
+  if(!toks.length){
+    return { title: "이렇게 검색해보세요", list: cat.filter(x => x.type === "symptom").slice(0, 6).map(x => Object.assign({ needles: [] }, x)) };
+  }
+  const scored = [];
+  cat.forEach(it => {
+    for(const t of toks){ if(!expandToken(t).some(a => findLoose(it.n, a) >= 0)) return; }
+    const starts = findLoose(it.n, toks[0]) === 0 ? 4 : 0;
+    scored.push({ it, s: starts + SG_PRI[it.type], len: it.text.length });
+  });
+  scored.sort((a, b) => b.s - a.s || a.len - b.len);
+  const qn = norm(q);
+  return {
+    title: "추천 검색어",
+    list: scored.filter(x => norm(x.it.text) !== qn).slice(0, 7).map(x => Object.assign({ needles: toks }, x.it))
+  };
+}
+function renderSuggest(){
+  const { title, list } = computeSuggestions(searchInput.value);
+  sgItems = list; sgActive = -1;
+  if(!list.length){ closeSuggest(); return; }
+  suggestBox.innerHTML = `<div class="suggest-title">${title}</div>` + list.map((it, i) =>
+    `<button type="button" class="sg-item" data-i="${i}"><span class="sg-ico">${SG_ICON[it.type]}</span><span class="sg-text">${hlHtml(it.text, matchRanges(it.text, it.needles))}</span><span class="sg-extra">${escHtml(it.extra)}</span></button>`
+  ).join("");
+  suggestBox.classList.add("show");
+}
+function closeSuggest(){ suggestBox.classList.remove("show"); sgActive = -1; }
+function setSgActive(i){
+  sgActive = i;
+  suggestBox.querySelectorAll(".sg-item").forEach((el, k) => el.classList.toggle("active", k === i));
+}
+function chooseSuggestion(it){
+  closeSuggest();
+  searchInput.blur();
+  if(it.type === "category"){
+    activeCat = it.payload; searchTerm = ""; searchInput.value = "";
+    searchClear.classList.remove("show");
+    renderCatNav(); renderList();
+  } else {
+    if(it.type === "product") activeCat = "전체";      // 제품을 직접 고르면 분류 제한 해제
+    applySearch(it.payload);
+  }
+  scrollToResults();
+}
+suggestBox.addEventListener("mousedown", e => e.preventDefault());     // 입력창 포커스 유지
+suggestBox.addEventListener("click", e => {
+  const b = e.target.closest(".sg-item");
+  if(b) chooseSuggestion(sgItems[+b.dataset.i]);
+});
+searchInput.addEventListener("focus", renderSuggest);
+searchInput.addEventListener("blur", () => setTimeout(closeSuggest, 150));
+
+searchInput.addEventListener("input", () => {
+  const v = searchInput.value.trim();
+  searchTerm = norm(v) ? v : "";
+  searchClear.classList.toggle("show", v.length > 0);
+  if(activeCat.startsWith("__QUICK__")) activeCat = "전체";   // 분류 선택(예: 무기질 탄성방수재)은 유지
+  renderCatNav();
+  renderList();
+  renderSuggest();
 });
 searchInput.addEventListener("keydown", (e) => {
-  if(e.key === "Enter"){            // 모바일: 키보드 닫고 결과 위치로 이동
+  const open = suggestBox.classList.contains("show") && sgItems.length;
+  if(e.key === "ArrowDown" && open){ e.preventDefault(); setSgActive((sgActive + 1) % sgItems.length); }
+  else if(e.key === "ArrowUp" && open){ e.preventDefault(); setSgActive((sgActive - 1 + sgItems.length) % sgItems.length); }
+  else if(e.key === "Escape"){ closeSuggest(); }
+  else if(e.key === "Enter"){
     e.preventDefault();
-    searchInput.blur();
-    document.querySelector("main").scrollIntoView({behavior:"smooth", block:"start"});
+    if(open && sgActive >= 0){ chooseSuggestion(sgItems[sgActive]); return; }
+    closeSuggest();
+    searchInput.blur();                  // 모바일: 키보드 닫고 결과 위치로 이동
+    scrollToResults();
   }
 });
 searchClear.addEventListener("click", () => {
   searchInput.value = "";
   searchTerm = "";
   searchClear.classList.remove("show");
+  renderCatNav();
   renderList();
   searchInput.focus();
+  closeSuggest();              // 지운 직후엔 추천 목록이 아래 버튼을 가리지 않도록 닫아 둠 (입력하면 다시 열림)
 });
 
 // ESC key closes modal / fullscreen
